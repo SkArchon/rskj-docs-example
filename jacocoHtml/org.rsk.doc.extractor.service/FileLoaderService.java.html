@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FileLoaderService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">javaparser</a> &gt; <a href="index.source.html" class="el_package">org.rsk.doc.extractor.service</a> &gt; <span class="el_source">FileLoaderService.java</span></div><h1>FileLoaderService.java</h1><pre class="source lang-java linenums">package org.rsk.doc.extractor.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.utils.SourceRoot;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.rsk.doc.extractor.Constants;
+import org.rsk.doc.extractor.dto.yaml.input.InputDocsInfo;
+import org.rsk.doc.extractor.dto.yaml.input.InputMethodInfo;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import static org.rsk.doc.extractor.Constants.DOCS_INFO_FILE_NAME;
+
+<span class="fc" id="L22">@NoArgsConstructor(access = AccessLevel.PRIVATE)</span>
+public class FileLoaderService {
+
+<span class="fc" id="L25">    @Getter</span>
+<span class="fc" id="L26">    private static final FileLoaderService instance = new FileLoaderService();</span>
+
+<span class="fc" id="L28">    private final PropertiesService propertiesService = PropertiesService.getInstance();</span>
+<span class="fc" id="L29">    private final ObjectMapper yamlMapper = Constants.getYamlMapper();</span>
+
+    public List&lt;ParseResult&lt;CompilationUnit&gt;&gt; getParseResults(String path) throws IOException {
+<span class="fc" id="L32">        Path projectRoot = Paths.get(path);</span>
+<span class="fc" id="L33">        SourceRoot sourceRoot = new SourceRoot(projectRoot);</span>
+<span class="fc" id="L34">        List&lt;ParseResult&lt;CompilationUnit&gt;&gt; parseResults = sourceRoot.tryToParse();</span>
+<span class="fc" id="L35">        return parseResults;</span>
+    }
+
+    public InputDocsInfo getDocsInfo(String yamlPath) throws IOException {
+<span class="fc" id="L39">        String docsInfoPath = yamlPath + &quot;/&quot; + DOCS_INFO_FILE_NAME;</span>
+<span class="fc" id="L40">        return yamlMapper.readValue(new File(docsInfoPath), InputDocsInfo.class);</span>
+    }
+
+    public String getValueFromPath(String path) {
+<span class="fc" id="L44">        String[] splitPath = path.split(&quot;/&quot;);</span>
+
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if(splitPath.length &lt;= 1) {</span>
+<span class="fc" id="L47">            throw new RuntimeException(&quot;The path should have a path mapping to the yaml value&quot;);</span>
+        }
+
+<span class="fc" id="L50">        String fileName = splitPath[0];</span>
+<span class="fc" id="L51">        InputMethodInfo methodInfo = getMethodInfoFromFileName(fileName);</span>
+
+<span class="fc" id="L53">        String methodName = splitPath[1];</span>
+<span class="fc bfc" id="L54" title="All 4 branches covered.">        switch(methodName){</span>
+            case &quot;description&quot;:
+<span class="fc" id="L56">                String descriptionKey = splitPath[2];</span>
+<span class="fc" id="L57">                String key = splitPath[3];</span>
+
+<span class="fc" id="L59">                InputMethodInfo.MethodDescription description = methodInfo.getDescription();</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                return (descriptionKey.equals(&quot;response&quot;))</span>
+<span class="fc" id="L61">                    ? description.getResponse().get(key)</span>
+<span class="fc" id="L62">                    : description.getRequest().get(key);</span>
+            case &quot;request&quot;:
+<span class="fc" id="L64">                String requestKey = splitPath[2];</span>
+<span class="fc" id="L65">                return methodInfo.getRequest().get(requestKey);</span>
+            case &quot;response&quot;:
+<span class="fc" id="L67">                String responseKey = splitPath[2];</span>
+<span class="fc" id="L68">                return methodInfo.getResponse().get(responseKey);</span>
+            default:
+<span class="fc" id="L70">                throw new RuntimeException(&quot;unrecognized value &quot; + methodName);</span>
+        }
+    }
+
+    private InputMethodInfo getMethodInfoFromFileName(String fileName) {
+        try {
+<span class="fc" id="L76">            InputMethodInfo methodInfo = yamlMapper.readValue(new File(propertiesService.getYamlPath() + &quot;/&quot; + fileName), InputMethodInfo.class);</span>
+<span class="fc" id="L77">            return methodInfo;</span>
+<span class="nc" id="L78">        } catch (IOException e) {</span>
+<span class="nc" id="L79">            throw new RuntimeException(e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

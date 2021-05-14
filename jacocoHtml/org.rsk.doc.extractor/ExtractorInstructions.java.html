@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExtractorInstructions.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">javaparser</a> &gt; <a href="index.source.html" class="el_package">org.rsk.doc.extractor</a> &gt; <span class="el_source">ExtractorInstructions.java</span></div><h1>ExtractorInstructions.java</h1><pre class="source lang-java linenums">package org.rsk.doc.extractor;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.expr.Expression;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.rsk.doc.extractor.dto.MethodAndAnnotation;
+import org.rsk.doc.extractor.dto.yaml.input.InputDocsInfo;
+import org.rsk.doc.extractor.dto.yaml.output.*;
+import org.rsk.doc.extractor.service.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.rsk.doc.extractor.Constants.DOCS_INFO_FILE_NAME;
+
+<span class="fc" id="L22">@NoArgsConstructor(access = AccessLevel.PRIVATE)</span>
+public class ExtractorInstructions {
+
+<span class="fc" id="L25">    @Getter</span>
+<span class="fc" id="L26">    private static final ExtractorInstructions instance = new ExtractorInstructions();</span>
+
+<span class="fc" id="L28">    private final DefaultParamService defaultParamService = DefaultParamService.getInstance();</span>
+<span class="fc" id="L29">    private final ExtractAnnotedMethodService extractAnnotedMethodService = ExtractAnnotedMethodService.getInstance();</span>
+<span class="fc" id="L30">    private final PropertiesService propertiesService = PropertiesService.getInstance();</span>
+<span class="fc" id="L31">    private final FileLoaderService fileLoaderService = FileLoaderService.getInstance();</span>
+<span class="fc" id="L32">    private final ClassProcessorService classProcessorService = ClassProcessorService.getInstance();</span>
+<span class="fc" id="L33">    private final MethodService methodService = MethodService.getInstance();</span>
+
+<span class="fc" id="L35">    private final ObjectMapper jsonMapper = Constants.getJsonMapper();</span>
+
+    public String startParsing(String path, String yamlPath) throws IOException {
+<span class="fc" id="L38">        List&lt;ParseResult&lt;CompilationUnit&gt;&gt; parseResults = fileLoaderService.getParseResults(path);</span>
+<span class="fc" id="L39">        InputDocsInfo docsInfo = fileLoaderService.getDocsInfo(yamlPath);</span>
+
+<span class="fc" id="L41">        Map&lt;String, Map&lt;String, Expression&gt;&gt; annotationDefaultValue = defaultParamService.getAnnotationDefaultValue(parseResults);</span>
+
+<span class="fc" id="L43">        propertiesService.setYamlPath(yamlPath);</span>
+<span class="fc" id="L44">        propertiesService.setParseResults(parseResults);</span>
+<span class="fc" id="L45">        propertiesService.setAnnotationDefaultValues(annotationDefaultValue);</span>
+
+<span class="fc" id="L47">        Map&lt;String, List&lt;MethodAndAnnotation&gt;&gt; methods = extractAnnotedMethodService.extractAnnotatedMethods(parseResults);</span>
+
+<span class="fc" id="L49">        List&lt;MethodDetails&gt; methodDetails = getMethodDetails(methods);</span>
+
+<span class="fc" id="L51">        ProcessedDoc processedDoc = new ProcessedDoc(</span>
+<span class="fc" id="L52">            docsInfo.getTitle(), docsInfo.getDescription(), methodDetails, classProcessorService.getModelStrings());</span>
+
+<span class="fc" id="L54">        return jsonMapper.writeValueAsString(processedDoc);</span>
+    }
+
+    private List&lt;MethodDetails&gt; getMethodDetails(Map&lt;String, List&lt;MethodAndAnnotation&gt;&gt; methods) {
+<span class="fc" id="L58">        List&lt;MethodDetails&gt; methodDetails = methods.entrySet()</span>
+<span class="fc" id="L59">            .stream()</span>
+<span class="fc" id="L60">            .map(entry -&gt; methodService.extractMethod(entry.getValue()))</span>
+<span class="fc" id="L61">            .collect(Collectors.toList());</span>
+<span class="fc" id="L62">        return methodDetails;</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

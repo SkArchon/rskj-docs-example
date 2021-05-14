@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultParamService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">javaparser</a> &gt; <a href="index.source.html" class="el_package">org.rsk.doc.extractor.service</a> &gt; <span class="el_source">DefaultParamService.java</span></div><h1>DefaultParamService.java</h1><pre class="source lang-java linenums">package org.rsk.doc.extractor.service;
+
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class DefaultParamService {
+
+<span class="fc" id="L22">    @Getter</span>
+<span class="fc" id="L23">    private static final DefaultParamService instance = new DefaultParamService();</span>
+
+<span class="fc" id="L25">    private static final String[] annotations = { &quot;JsonRpcDoc&quot;, &quot;JsonRpcDocRequestParameter&quot;, &quot;JsonRpcDocResponse&quot;, &quot;JsonRpcDocModelType&quot; };</span>
+
+    public Map&lt;String, Map&lt;String, Expression&gt;&gt; getAnnotationDefaultValue(List&lt;ParseResult&lt;CompilationUnit&gt;&gt; parseResults) {
+<span class="fc" id="L28">        return Arrays.stream(annotations)</span>
+<span class="fc" id="L29">            .map(annotationName -&gt; {</span>
+<span class="fc" id="L30">                Map&lt;String, Expression&gt; params =</span>
+<span class="fc" id="L31">                    getDefaultParametersForJsonRpcDocAnnotation(parseResults, annotationName);</span>
+<span class="fc" id="L32">                return new AbstractMap.SimpleEntry&lt;&gt;(annotationName, params);</span>
+            })
+<span class="fc" id="L34">            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));</span>
+    }
+
+    public Map&lt;String, Expression&gt; getDefaultParametersForJsonRpcDocAnnotation(List&lt;ParseResult&lt;CompilationUnit&gt;&gt; parseResults,
+                                                                               String annotationName) {
+<span class="fc" id="L39">        Optional&lt;AnnotationDeclaration&gt; jsonRpcAnnotationDeclaration = getAnnotationDeclaration(parseResults, annotationName);</span>
+
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if(!jsonRpcAnnotationDeclaration.isPresent()) {</span>
+<span class="nc" id="L42">            throw new RuntimeException(&quot;Unable to detect required documentation annotation&quot;);</span>
+        }
+
+        // Create the default pairs that we will use
+<span class="fc" id="L46">        return jsonRpcAnnotationDeclaration.get()</span>
+<span class="fc" id="L47">            .getMembers()</span>
+<span class="fc" id="L48">            .stream()</span>
+<span class="fc" id="L49">            .map(bodyDeclaration -&gt; (AnnotationMemberDeclaration) bodyDeclaration)</span>
+<span class="fc" id="L50">            .filter(annotationMemberDeclaration -&gt; annotationMemberDeclaration.getDefaultValue().isPresent())</span>
+<span class="fc" id="L51">            .collect(Collectors.toMap(</span>
+<span class="fc" id="L52">                annotationMemberDeclaration -&gt; annotationMemberDeclaration.getNameAsString(),</span>
+<span class="fc" id="L53">                annotationMemberDeclaration -&gt; annotationMemberDeclaration.getDefaultValue().get()));</span>
+    }
+
+    private Optional&lt;AnnotationDeclaration&gt; getAnnotationDeclaration(List&lt;ParseResult&lt;CompilationUnit&gt;&gt; parseResults, String annotationName) {
+<span class="fc" id="L57">        GenericVisitorAdapter&lt;AnnotationDeclaration, Void&gt; collector = new GenericVisitorAdapter&lt;AnnotationDeclaration, Void&gt;() {</span>
+            @Override
+            public AnnotationDeclaration visit(final AnnotationDeclaration n, final Void arg) {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                if(n.getNameAsString().equals(annotationName)) {</span>
+<span class="fc" id="L61">                    return n;</span>
+                }
+<span class="fc" id="L63">                return super.visit(n, arg);</span>
+            }
+        };
+
+<span class="fc" id="L67">        return parseResults.stream()</span>
+<span class="fc" id="L68">            .map(compilationUnitParseResult -&gt; compilationUnitParseResult.getResult())</span>
+<span class="fc" id="L69">            .filter(compilationUnit -&gt; compilationUnit.isPresent())</span>
+<span class="fc" id="L70">            .map(compilationUnit -&gt; collector.visit(compilationUnit.get(), null))</span>
+<span class="fc" id="L71">            .filter(Objects::nonNull)</span>
+<span class="fc" id="L72">            .findFirst();</span>
+    }
+
+
+    public Map&lt;String, Expression&gt; getProcessedPairValues(Map&lt;String, Map&lt;String, Expression&gt;&gt; annotationDefaultValue,
+                                                          AnnotationExpr annotationExpr) {
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        NodeList&lt;MemberValuePair&gt; pairs = (annotationExpr instanceof NormalAnnotationExpr)</span>
+<span class="fc" id="L79">            ? annotationExpr.toNormalAnnotationExpr().get().getPairs()</span>
+            : new NodeList&lt;&gt;();
+
+        // We take a copy so we dont need to modify the original instance
+<span class="fc" id="L83">        Map&lt;String, Expression&gt; convertedPairs = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L84">        convertedPairs.putAll(convertPairsToMap(pairs));</span>
+
+<span class="fc" id="L86">        Map&lt;String, Expression&gt; defaultParams = annotationDefaultValue.get(annotationExpr.getNameAsString());</span>
+<span class="fc" id="L87">        defaultParams.forEach(</span>
+<span class="fc" id="L88">            (key, value) -&gt; convertedPairs.merge(key, value, (v1, v2) -&gt; v1)</span>
+        );
+
+<span class="fc" id="L91">        return convertedPairs;</span>
+    }
+
+    public Map&lt;String, Expression&gt; convertPairsToMap(NodeList&lt;MemberValuePair&gt; pairs) {
+<span class="fc" id="L95">        return pairs.stream()</span>
+<span class="fc" id="L96">            .collect(Collectors.toMap(e -&gt; e.getName().getIdentifier(), MemberValuePair::getValue));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>
