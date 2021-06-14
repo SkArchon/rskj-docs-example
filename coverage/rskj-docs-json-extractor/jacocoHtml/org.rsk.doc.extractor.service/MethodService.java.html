@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MethodService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">javaparser</a> &gt; <a href="index.source.html" class="el_package">org.rsk.doc.extractor.service</a> &gt; <span class="el_source">MethodService.java</span></div><h1>MethodService.java</h1><pre class="source lang-java linenums">package org.rsk.doc.extractor.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
+import org.rsk.doc.extractor.Constants;
+import org.rsk.doc.extractor.dto.MethodAndAnnotation;
+import org.rsk.doc.extractor.dto.yaml.output.*;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.rsk.doc.extractor.service.CommonUtil.processBinaryExprString;
+
+<span class="fc" id="L32">@NoArgsConstructor(access = AccessLevel.PRIVATE)</span>
+public class MethodService {
+
+<span class="fc" id="L35">    @Getter</span>
+<span class="fc" id="L36">    private static final MethodService instance = new MethodService();</span>
+
+<span class="fc" id="L38">    private final DefaultParamService defaultParamService = DefaultParamService.getInstance();</span>
+<span class="fc" id="L39">    private final PropertiesService propertiesService = PropertiesService.getInstance();</span>
+<span class="fc" id="L40">    private final FileLoaderService fileLoaderService = FileLoaderService.getInstance();</span>
+<span class="fc" id="L41">    private final ClassProcessorService classProcessorService = ClassProcessorService.getInstance();</span>
+
+    /**
+     * In case of method overloads make sure to extract the primary method which contains most of the documentation.
+     * Return default in case there are no overloads.
+     * @param methodAndAnnotationList method annotations
+     * @return primary entry
+     */
+    private MethodAndAnnotation getPrimary(List&lt;MethodAndAnnotation&gt; methodAndAnnotationList) {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if(methodAndAnnotationList.size() &gt; 1) {</span>
+<span class="fc" id="L51">            Map&lt;String, Map&lt;String, Expression&gt;&gt; annotationDefaultValues = propertiesService.getAnnotationDefaultValues();</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">            for (MethodAndAnnotation methodAndAnnotation : methodAndAnnotationList) {</span>
+<span class="fc" id="L53">                AnnotationExpr annotationExpr = methodAndAnnotation.getAnnotationExpr();</span>
+<span class="fc" id="L54">                Map&lt;String, Expression&gt; processedPairValues = defaultParamService.getProcessedPairValues(annotationDefaultValues, annotationExpr);</span>
+
+<span class="fc" id="L56">                Boolean isPrimary = processedPairValues.get(&quot;primaryForOverloads&quot;).asBooleanLiteralExpr().getValue();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                if (isPrimary) {</span>
+<span class="fc" id="L58">                    return methodAndAnnotation;</span>
+                }
+<span class="fc" id="L60">            }</span>
+        }
+<span class="fc" id="L62">        return methodAndAnnotationList.get(0);</span>
+    }
+
+    /**
+     * This method is reponsible for extracting each individual method in the json
+     * @param methodAndAnnotationList all methods present
+     * @return a processed json containing all the details pertaining to this method
+     */
+    public MethodDetails extractMethod(List&lt;MethodAndAnnotation&gt; methodAndAnnotationList) {
+<span class="fc" id="L71">        Map&lt;String, Map&lt;String, Expression&gt;&gt; annotationDefaultValues = propertiesService.getAnnotationDefaultValues();</span>
+
+<span class="fc" id="L73">        MethodAndAnnotation methodAndAnnotation = getPrimary(methodAndAnnotationList);</span>
+<span class="fc" id="L74">        MethodDeclaration methodDeclaration = methodAndAnnotation.getMethodDeclaration();</span>
+
+<span class="fc" id="L76">        String methodName = methodDeclaration.getNameAsString();</span>
+
+<span class="fc" id="L78">        Map&lt;String, Expression&gt; processedPairValues = defaultParamService.getProcessedPairValues(</span>
+<span class="fc" id="L79">            annotationDefaultValues, methodAndAnnotation.getAnnotationExpr());</span>
+
+<span class="fc" id="L81">        String description = processBinaryExprString(processedPairValues.get(&quot;description&quot;));</span>
+
+        // In case the user has not set a summary we substitute the description in
+<span class="fc" id="L84">        String initialSummary = processBinaryExprString(processedPairValues.get(&quot;summary&quot;));</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        String summary = (StringUtils.isEmpty(initialSummary))</span>
+            ? description
+            : initialSummary;
+
+<span class="fc" id="L89">        boolean isWriteMethod = processedPairValues.get(&quot;isWriteMethod&quot;).asBooleanLiteralExpr().getValue();</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        MethodType methodType = isWriteMethod</span>
+            ? MethodType.WRITE
+            : MethodType.READ;
+
+<span class="fc" id="L94">        Expression requestExampleExpression = processedPairValues.get(&quot;requestExamples&quot;);</span>
+
+        // The javaparser library detects the type based on what is present
+        // in the java file and not what is present in
+        // the actual type therefore in case a user omits the
+        // curly braces we do this
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        List&lt;Expression&gt; requestExampleExpressionsList = (requestExampleExpression.isArrayInitializerExpr())</span>
+<span class="fc" id="L101">            ? requestExampleExpression.asArrayInitializerExpr().getValues()</span>
+<span class="fc" id="L102">            : Arrays.asList(requestExampleExpression);</span>
+
+<span class="fc" id="L104">        RequestDetails requestDetails = getRequestDetails(methodAndAnnotationList, methodName, requestExampleExpressionsList);</span>
+
+<span class="fc" id="L106">        NodeList&lt;Expression&gt; responseArray = processedPairValues.get(&quot;responses&quot;).asArrayInitializerExpr().getValues();</span>
+<span class="fc" id="L107">        List&lt;ResponseDetails&gt; responseDetails = getResponseDetails(responseArray, methodAndAnnotation);</span>
+
+<span class="fc" id="L109">        JsonNode responseJsonSchemaDetails = fileLoaderService.getJsonSchemaIfExists(methodName, &quot;response&quot;);</span>
+
+<span class="fc" id="L111">        return new MethodDetails(methodName, description, summary, methodType, requestDetails, responseDetails, responseJsonSchemaDetails);</span>
+    }
+
+    private RequestDetails getRequestDetails(List&lt;MethodAndAnnotation&gt; methodAndAnnotationList, String methodName, List&lt;Expression&gt; requestExampleExpressionsList) {
+<span class="fc" id="L115">        List&lt;String&gt; requestExampleEntries = requestExampleExpressionsList.stream()</span>
+<span class="fc" id="L116">            .map(expression -&gt; {</span>
+<span class="fc" id="L117">                String path = processBinaryExprString(expression);</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">                return (StringUtils.isEmpty(path))</span>
+                    ? null
+<span class="fc" id="L120">                    : fileLoaderService.getValueFromPath(path);</span>
+            })
+<span class="fc" id="L122">            .filter(Objects::nonNull)</span>
+<span class="fc" id="L123">            .collect(Collectors.toList());</span>
+
+<span class="fc" id="L125">        JsonNode requestJsonSchemaDetails = fileLoaderService.getJsonSchemaIfExists(methodName, &quot;request&quot;);</span>
+<span class="fc" id="L126">        List&lt;List&lt;InputParam&gt;&gt; inputParams = getInputParams(methodAndAnnotationList);</span>
+<span class="fc" id="L127">        RequestDetails requestDetails = new RequestDetails(inputParams, requestExampleEntries, requestJsonSchemaDetails);</span>
+<span class="fc" id="L128">        return requestDetails;</span>
+    }
+
+    private List&lt;ResponseDetails&gt; getResponseDetails(NodeList&lt;Expression&gt; responses, MethodAndAnnotation methodAndAnnotation) {
+<span class="fc" id="L132">        Map&lt;String, Map&lt;String, Expression&gt;&gt; annotationDefaultValues = propertiesService.getAnnotationDefaultValues();</span>
+
+<span class="fc" id="L134">        return responses.stream()</span>
+<span class="fc" id="L135">            .map(expression -&gt; {</span>
+<span class="fc" id="L136">                AnnotationExpr annotation = (AnnotationExpr) expression;</span>
+<span class="fc" id="L137">                Map&lt;String, Expression&gt; processedPairs = defaultParamService.getProcessedPairValues(annotationDefaultValues, annotation);</span>
+
+<span class="fc" id="L139">                boolean isSuccess = processedPairs.get(&quot;success&quot;).asBooleanLiteralExpr().getValue();</span>
+<span class="fc" id="L140">                String code = processBinaryExprString(processedPairs.get(&quot;code&quot;));</span>
+
+<span class="fc" id="L142">                String processedDescription = getDescriptionAfterProcessing(processedPairs);</span>
+
+<span class="fc" id="L144">                String examplePath = processBinaryExprString(processedPairs.get(&quot;examplePath&quot;));</span>
+<span class="fc" id="L145">                String example = fileLoaderService.getValueFromPath(examplePath);</span>
+
+                // This didnt seem it need to be set in the annotations
+                // as the methods seemed to return either 200 or 500 when checked
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                Integer httpCode = (isSuccess)</span>
+                    ? 200
+                    : 500;
+
+<span class="fc" id="L153">                String modelKey = processModelAndGetModelKey(</span>
+<span class="fc" id="L154">                    methodAndAnnotation.getMethodDeclaration().getType(), processedPairs.get(&quot;attachModel&quot;).asBooleanLiteralExpr().getValue());</span>
+
+<span class="fc" id="L156">                return new ResponseDetails(</span>
+<span class="fc" id="L157">                    code, isSuccess, httpCode, processedDescription, example, modelKey);</span>
+            })
+<span class="fc" id="L159">            .collect(Collectors.toList());</span>
+    }
+
+    private String processModelAndGetModelKey(Type type, Boolean attachModel) {
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        if(attachModel) {</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">            if(type instanceof ClassOrInterfaceType) {</span>
+<span class="fc" id="L165">                ClassOrInterfaceType classOrInterfaceType = (ClassOrInterfaceType) type;</span>
+<span class="fc" id="L166">                String className = classOrInterfaceType.getName().getIdentifier();</span>
+<span class="fc" id="L167">                classProcessorService.processClassAsType(className);</span>
+<span class="fc" id="L168">                return className;</span>
+            }
+        }
+<span class="fc" id="L171">        return null;</span>
+    }
+
+    /**
+     * This method gets the input parameters pertaining to a method. There are complexities by overliads such as
+     *   - Needing to track overloads, overloads can also be annotated with &quot;usePrimary&quot;, requiring to ignore that
+     *     version
+     * @param methodAndAnnotationList
+     * @return
+     */
+    private List&lt;List&lt;InputParam&gt;&gt; getInputParams(List&lt;MethodAndAnnotation&gt; methodAndAnnotationList) {
+<span class="fc" id="L182">        Map&lt;String, Map&lt;String, Expression&gt;&gt; annotationDefaultValues = propertiesService.getAnnotationDefaultValues();</span>
+
+<span class="fc" id="L184">        List&lt;MethodAndAnnotation&gt; requestParamsList = methodAndAnnotationList.stream()</span>
+<span class="fc" id="L185">            .map(entry -&gt; getRequestParamsOrdered(annotationDefaultValues, entry))</span>
+<span class="fc" id="L186">            .collect(Collectors.toList());</span>
+
+        // Get the length of the method with the largest parameters in each overload
+<span class="fc" id="L189">        Optional&lt;Integer&gt; highestValueOptional = requestParamsList.stream()</span>
+<span class="fc" id="L190">            .map(expressions -&gt; expressions.getAnnotations().size())</span>
+<span class="fc" id="L191">            .max(Comparator.comparing(Integer::valueOf));</span>
+
+        // There are no input params at all
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (!highestValueOptional.isPresent()) {</span>
+<span class="nc" id="L195">            return new ArrayList&lt;&gt;();</span>
+        }
+
+        // Iterate through to the maximum position and process all overloads
+<span class="fc" id="L199">        return IntStream.range(0, highestValueOptional.get())</span>
+<span class="fc" id="L200">            .mapToObj(index -&gt;</span>
+<span class="fc" id="L201">                groupInputParamsByIndexValue(annotationDefaultValues, requestParamsList, index))</span>
+<span class="fc" id="L202">            .collect(Collectors.toList());</span>
+    }
+
+    private List&lt;InputParam&gt; groupInputParamsByIndexValue(Map&lt;String, Map&lt;String, Expression&gt;&gt; annotationDefaultValues,
+                                                          List&lt;MethodAndAnnotation&gt; requestParamsList,
+                                                          int index) {
+<span class="fc" id="L208">        List&lt;InputParam&gt; inputParams = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L210">        requestParamsList.forEach(methodAndAnnotation -&gt; {</span>
+<span class="fc" id="L211">            List&lt;AnnotationExpr&gt; expressions = methodAndAnnotation.getAnnotations();</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">            if(expressions.size() &gt; index) {</span>
+<span class="fc" id="L213">                AnnotationExpr annotation = expressions.get(index);</span>
+<span class="fc" id="L214">                Map&lt;String, Expression&gt; processedPairs = defaultParamService.getProcessedPairValues(annotationDefaultValues, annotation);</span>
+
+<span class="fc" id="L216">                boolean usePrimary = processedPairs.get(&quot;usePrimary&quot;).asBooleanLiteralExpr().getValue();</span>
+
+                // Use primary is ignored as that indicates to refer to only the primary value
+<span class="fc bfc" id="L219" title="All 2 branches covered.">                if (!usePrimary) {</span>
+<span class="fc" id="L220">                    Parameter parameter = validateAndGetParameter(methodAndAnnotation.getMethodDeclaration(), processedPairs);</span>
+<span class="fc" id="L221">                    String processedParameterName = getParameterName(processedPairs);</span>
+
+<span class="fc" id="L223">                    String processedDescription = getDescriptionAfterProcessing(processedPairs);</span>
+
+<span class="fc" id="L225">                    String modelKey = processModelAndGetModelKey(</span>
+<span class="fc" id="L226">                        parameter.getType(),</span>
+<span class="fc" id="L227">                        processedPairs.get(&quot;attachModel&quot;)</span>
+<span class="fc" id="L228">                            .asBooleanLiteralExpr()</span>
+<span class="fc" id="L229">                            .getValue());</span>
+
+<span class="fc" id="L231">                    inputParams.add(new InputParam(</span>
+                        processedParameterName, processedDescription, modelKey));
+                }
+            }
+<span class="fc" id="L235">        });</span>
+<span class="fc" id="L236">        return inputParams;</span>
+    }
+
+    /**
+     * Load the description from the file or annotation depending on if
+     * loadDescriptionFromFile is enabled
+     */
+    private String getDescriptionAfterProcessing(Map&lt;String, Expression&gt; processedPairs) {
+<span class="fc" id="L244">        String initialDescription = processBinaryExprString(processedPairs.get(&quot;description&quot;));</span>
+<span class="fc" id="L245">        boolean loadDescriptionFromFile = processedPairs.get(&quot;loadDescriptionFromFile&quot;).asBooleanLiteralExpr().getValue();</span>
+
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        return (loadDescriptionFromFile)</span>
+<span class="fc" id="L248">            ? fileLoaderService.getValueFromPath(initialDescription)</span>
+            : initialDescription;
+    }
+
+    private Parameter validateAndGetParameter(MethodDeclaration primaryMethodDeclaration, Map&lt;String, Expression&gt; processedPairs) {
+<span class="fc" id="L253">        String parameterName = processBinaryExprString(processedPairs.get(&quot;name&quot;));</span>
+
+<span class="fc" id="L255">        Optional&lt;Parameter&gt; matchingParameter = primaryMethodDeclaration.getParameters()</span>
+<span class="fc" id="L256">            .stream()</span>
+<span class="fc" id="L257">            .filter(parameter -&gt; parameter.getNameAsString().equals(parameterName))</span>
+<span class="fc" id="L258">            .findFirst();</span>
+
+        // The matching parameter should exist, otherwise its a documentation error
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        if (!matchingParameter.isPresent()) {</span>
+<span class="nc" id="L262">            throw new RuntimeException(</span>
+<span class="nc" id="L263">                &quot;There was no matching parameter present for &quot; + parameterName + &quot; and &quot; + primaryMethodDeclaration.getNameAsString());</span>
+        }
+
+<span class="fc" id="L266">        return matchingParameter.get();</span>
+    }
+
+    private MethodAndAnnotation getRequestParamsOrdered(Map&lt;String, Map&lt;String, Expression&gt;&gt; annotationDefaultValues,
+                                                        MethodAndAnnotation entry) {
+<span class="fc" id="L271">        Map&lt;String, Expression&gt; processedPairValues = defaultParamService.getProcessedPairValues(</span>
+<span class="fc" id="L272">            annotationDefaultValues, entry.getAnnotationExpr());</span>
+<span class="fc" id="L273">        NodeList&lt;Expression&gt; requestParams = processedPairValues.get(&quot;requestParams&quot;).asArrayInitializerExpr().getValues();</span>
+
+        // Group all the annotations by name so we can set them to a specific order
+        // e.g. :- method overload 1 can have &quot;String name&quot; in pos 1 while the same field is in pos 2 for a different
+        // overload
+<span class="fc" id="L278">        Map&lt;String, AnnotationExpr&gt; annotationExprByName = requestParams.stream()</span>
+<span class="fc" id="L279">            .map(expression -&gt; {</span>
+<span class="fc" id="L280">                AnnotationExpr annotationExpr = expression.asAnnotationExpr();</span>
+<span class="fc" id="L281">                NormalAnnotationExpr normalAnnotationExpr = annotationExpr.asNormalAnnotationExpr();</span>
+<span class="fc" id="L282">                Map&lt;String, Expression&gt; annotationParams = defaultParamService.convertPairsToMap(normalAnnotationExpr.getPairs());</span>
+
+<span class="fc" id="L284">                String name = processBinaryExprString(annotationParams.get(&quot;name&quot;));</span>
+<span class="fc" id="L285">                return new AbstractMap.SimpleEntry&lt;&gt;(name, annotationExpr);</span>
+            })
+<span class="fc" id="L287">            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));</span>
+
+<span class="fc" id="L289">        List&lt;AnnotationExpr&gt; orderedExpressions = entry.getMethodDeclaration()</span>
+<span class="fc" id="L290">            .getParameters()</span>
+<span class="fc" id="L291">            .stream()</span>
+<span class="fc" id="L292">            .map(parameter -&gt; annotationExprByName.get(parameter.getNameAsString()))</span>
+<span class="fc" id="L293">            .collect(Collectors.toList());</span>
+
+<span class="fc" id="L295">        return new MethodAndAnnotation(entry.getMethodDeclaration(), orderedExpressions);</span>
+    }
+
+    // Sometimes an alias can be set where the code uses a different name, in this cases return the alias
+    private String getParameterName(Map&lt;String, Expression&gt; processedPairs) {
+<span class="fc" id="L300">        String parameterName = processBinaryExprString(processedPairs.get(&quot;name&quot;));</span>
+<span class="fc" id="L301">        String parameterAlias = processBinaryExprString(processedPairs.get(&quot;alias&quot;));</span>
+
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">        return (StringUtils.isEmpty(parameterAlias))</span>
+            ? parameterName
+            : parameterAlias;
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

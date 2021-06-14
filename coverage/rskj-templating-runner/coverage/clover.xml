@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1623701631882" clover="3.2.0">
+  <project timestamp="1623701631883" name="All files">
+    <metrics statements="104" coveredstatements="104" conditionals="17" coveredconditionals="17" methods="32" coveredmethods="32" elements="153" coveredelements="153" complexity="0" loc="104" ncloc="104" packages="2" files="4" classes="4"/>
+    <package name="rskj-templating-runner">
+      <metrics statements="94" coveredstatements="94" conditionals="17" coveredconditionals="17" methods="32" coveredmethods="32"/>
+      <file name="common.js" path="/Users/milindadias/Workspaces/annotationtesting/rskj-docs-generator/rskj-docs-html-generator/rskj-templating-runner/common.js">
+        <metrics statements="33" coveredstatements="33" conditionals="5" coveredconditionals="5" methods="13" coveredmethods="13"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="4" count="3" type="stmt"/>
+        <line num="6" count="3" type="stmt"/>
+        <line num="7" count="3" type="stmt"/>
+        <line num="11" count="3" type="stmt"/>
+        <line num="16" count="3" type="stmt"/>
+        <line num="17" count="3" type="stmt"/>
+        <line num="21" count="4" type="stmt"/>
+        <line num="22" count="4" type="stmt"/>
+        <line num="26" count="14" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="38" count="1" type="stmt"/>
+        <line num="40" count="1" type="stmt"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="52" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="53" count="7" type="stmt"/>
+        <line num="57" count="3" type="stmt"/>
+        <line num="61" count="2" type="stmt"/>
+        <line num="65" count="1" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="75" count="1" type="stmt"/>
+        <line num="76" count="1" type="stmt"/>
+        <line num="77" count="1" type="stmt"/>
+        <line num="78" count="1" type="stmt"/>
+        <line num="82" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="86" count="3" type="stmt"/>
+        <line num="87" count="3" type="stmt"/>
+        <line num="88" count="3" type="stmt"/>
+        <line num="92" count="1" type="stmt"/>
+        <line num="93" count="1" type="stmt"/>
+        <line num="94" count="1" type="stmt"/>
+        <line num="99" count="3" type="stmt"/>
+      </file>
+      <file name="extract-wrapper.js" path="/Users/milindadias/Workspaces/annotationtesting/rskj-docs-generator/rskj-docs-html-generator/rskj-templating-runner/extract-wrapper.js">
+        <metrics statements="17" coveredstatements="17" conditionals="2" coveredconditionals="2" methods="6" coveredmethods="6"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="4" count="1" type="stmt"/>
+        <line num="5" count="1" type="stmt"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="12" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="13" count="1" type="stmt"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="25" count="1" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="36" count="2" type="stmt"/>
+        <line num="41" count="1" type="stmt"/>
+      </file>
+      <file name="extractor.js" path="/Users/milindadias/Workspaces/annotationtesting/rskj-docs-generator/rskj-docs-html-generator/rskj-templating-runner/extractor.js">
+        <metrics statements="44" coveredstatements="44" conditionals="10" coveredconditionals="10" methods="13" coveredmethods="13"/>
+        <line num="3" count="2" type="stmt"/>
+        <line num="4" count="2" type="stmt"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="13" count="2" type="stmt"/>
+        <line num="14" count="1" type="stmt"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="17" count="2" type="stmt"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="27" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="39" count="1" type="stmt"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="47" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="56" count="1" type="stmt"/>
+        <line num="61" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="62" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="68" count="7" type="stmt"/>
+        <line num="70" count="7" type="stmt"/>
+        <line num="72" count="7" type="stmt"/>
+        <line num="73" count="7" type="stmt"/>
+        <line num="75" count="7" type="stmt"/>
+        <line num="76" count="7" type="stmt"/>
+        <line num="77" count="7" type="stmt"/>
+        <line num="81" count="7" type="stmt"/>
+        <line num="82" count="7" type="stmt"/>
+        <line num="83" count="7" type="stmt"/>
+        <line num="85" count="7" type="stmt"/>
+        <line num="86" count="7" type="stmt"/>
+        <line num="91" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="92" count="6" type="stmt"/>
+        <line num="93" count="6" type="stmt"/>
+        <line num="95" count="6" type="stmt"/>
+        <line num="104" count="7" type="stmt"/>
+        <line num="115" count="7" type="stmt"/>
+        <line num="116" count="7" type="stmt"/>
+        <line num="119" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="120" count="4" type="stmt"/>
+        <line num="122" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="123" count="4" type="stmt"/>
+        <line num="129" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="rskj-templating-runner.test">
+      <metrics statements="10" coveredstatements="10" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <file name="common.constants.js" path="/Users/milindadias/Workspaces/annotationtesting/rskj-docs-generator/rskj-docs-html-generator/rskj-templating-runner/test/common.constants.js">
+        <metrics statements="10" coveredstatements="10" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="49" count="2" type="stmt"/>
+        <line num="94" count="2" type="stmt"/>
+        <line num="96" count="2" type="stmt"/>
+        <line num="97" count="2" type="stmt"/>
+        <line num="99" count="2" type="stmt"/>
+        <line num="132" count="2" type="stmt"/>
+        <line num="155" count="2" type="stmt"/>
+        <line num="156" count="2" type="stmt"/>
+        <line num="159" count="2" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>
